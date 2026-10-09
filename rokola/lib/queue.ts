@@ -38,11 +38,27 @@ export async function advance(expectedId?: string) {
 export async function mutateQueue(action: "remove" | "priority" | "up" | "down" | "clear", id?: string) {
   const state = await getState();
   const index = state.queue.findIndex((song) => song.id === id);
+  const originalLength = state.queue.length;
+
   if (action === "clear") state.queue = [];
-  if (action === "remove" && index >= 0) state.queue.splice(index, 1);
-  if (action === "priority" && index > 0) state.queue.unshift(...state.queue.splice(index, 1));
-  if (action === "up" && index > 0) [state.queue[index - 1], state.queue[index]] = [state.queue[index], state.queue[index - 1]];
-  if (action === "down" && index >= 0 && index < state.queue.length - 1) [state.queue[index + 1], state.queue[index]] = [state.queue[index], state.queue[index + 1]];
+  else if (action === "remove" && index >= 0) {
+    state.queue = state.queue.filter((song) => song.id !== id);
+  } else if (action === "priority" && index > 0) {
+    const selected = state.queue[index];
+    state.queue = [selected, ...state.queue.filter((song) => song.id !== id)];
+  } else if (action === "up" && index > 0) {
+    const reordered = [...state.queue];
+    [reordered[index - 1], reordered[index]] = [reordered[index], reordered[index - 1]];
+    state.queue = reordered;
+  } else if (action === "down" && index >= 0 && index < state.queue.length - 1) {
+    const reordered = [...state.queue];
+    [reordered[index + 1], reordered[index]] = [reordered[index], reordered[index + 1]];
+    state.queue = reordered;
+  }
+
+  if (action === "priority" && state.queue.length !== originalLength) {
+    throw new Error("No se pudo cambiar la prioridad; la cola quedó sin cambios");
+  }
   await save(state);
   return state;
 }
