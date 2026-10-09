@@ -162,9 +162,9 @@ Es la pieza más delicada: una página que se abre una vez en la computadora o l
 Lo que debe hacer, en orden:
 
 1. **Pedir sesión de administrador.** Si no la hay, muestra un enlace al panel para iniciar sesión.
-2. **Esperar un clic en "Iniciar rokola".** Los navegadores bloquean el sonido automático hasta que la persona toca la página. Con ese primer clic, todas las canciones siguientes sí arrancan solas.
+2. **Intentar iniciar la reproducción automáticamente.** Si el navegador bloquea el sonido, mostrar el botón "Iniciar reproducción" para que el encargado lo habilite con un clic.
 3. **Cargar la YouTube IFrame API y crear un solo reproductor.** Se crea una vez y se reutiliza; no se recrea con cada canción.
-4. **Reproducir lo que diga el servidor.** Cada vez que cambia la canción actual, le ordena al reproductor cargar ese video.
+4. **Reproducir lo que diga el servidor.** Cada vez que cambia la canción actual, le ordena al reproductor cargar ese video; después de iniciar la primera, las siguientes arrancan solas.
 5. **Avisar cuando termina.** Al recibir el evento de fin de video, pide al servidor avanzar, indicando qué canción creía que sonaba (la regla de idempotencia del paso 2).
 6. **Saltar sola si el video falla.** Si YouTube devuelve error (video eliminado, bloqueado en el país o no incrustable), pide avanzar igualmente, para que la rokola nunca se quede trabada.
 7. **Arrancar sola.** Si no suena nada y alguien agrega una canción a una cola vacía, el reproductor pide avanzar para iniciarla.
@@ -175,7 +175,7 @@ Lo que se ve en pantalla:
 - **Una barra lateral** con el código QR, el título de lo que suena y las próximas tres canciones.
 - **Una pantalla de espera** con el QR muy grande y el texto "¡Pide tu canción!" cuando no hay nada en cola.
 
-El QR apunta a la raíz de tu sitio. Usa una variable de entorno con la dirección pública para que el QR siempre lleve al dominio de producción, aunque abras el reproductor desde otra dirección.
+El QR apunta a `https://rokola-bar-coezo-opgkcnmpz-aquino6.vercel.app/`, aunque abras el reproductor desde otra dirección.
 
 Consejos de instalación en el bar: usa un navegador dedicado en pantalla completa (tecla F11), desactiva la suspensión de la pantalla del equipo y abre el reproductor desde una cuenta de navegador que no uses para otra cosa. Si decides usar YouTube Premium (ver la sección de anuncios), este es el navegador donde debe estar iniciada esa sesión.
 
@@ -211,7 +211,6 @@ Con solo dos variables obligatorias ya puedes probar todo en tu computadora; las
 | YOUTUBE\_API\_KEY | Búsqueda por nombre; sin ella solo funcionan los enlaces | No, pero recomendada |
 | UPSTASH\_REDIS\_REST\_URL y UPSTASH\_REDIS\_REST\_TOKEN | Conexión a Redis; sin ellas la cola vive en memoria | Solo en producción |
 | MAX\_PER\_CLIENT | Máximo de canciones en espera por celular (por defecto 10) | No |
-| NEXT\_PUBLIC\_SITE\_URL | Dirección pública que lleva el QR | Recomendada en producción |
 
 Para probar, arranca el servidor de desarrollo (npm run dev) y recorre este circuito completo:
 
@@ -235,7 +234,7 @@ Vercel despliega solo cada vez que subes cambios a GitHub, así que el despliegu
 3. **Crea la base de datos** desde la pestaña *Storage* del proyecto, eligiendo *Upstash Redis* en el Marketplace, y conéctala al proyecto. Vercel crea las variables de conexión por ti.
 4. **Agrega las variables restantes** en *Settings → Environment Variables*: contraseña del administrador, cadena secreta, clave de YouTube y máximo por cliente.
 5. **Despliega** y abre la dirección que te da Vercel.
-6. **Define la dirección pública del QR.** Copia el dominio final, guárdalo como la variable de dirección pública y vuelve a desplegar, porque esa variable se incorpora al construir la app.
+6. **Verifica el QR.** Debe apuntar al dominio público de Rokola.
 7. **Repite el circuito de pruebas del paso 9** ya en producción, esta vez con datos móviles en el celular para confirmar que el QR funciona fuera de tu Wi-Fi.
 
 Dos cosas que conviene revisar antes de abrir al público:
@@ -255,7 +254,7 @@ La mayoría de los fallos reales tienen causas conocidas, y esta tabla cubre las
 | El video no arranca al abrir el reproductor | El navegador bloquea el sonido automático | Pulsa "Iniciar rokola" una vez en esa pestaña |
 | La rokola se queda detenida en un video | El video no se puede incrustar o fue eliminado | Debe saltarse solo al recibir el error; si no, revisa ese manejo en el reproductor |
 | La búsqueda por nombre falla | Clave ausente o cuota diaria agotada | Revisa la clave en Google Cloud; mientras tanto se pueden pegar enlaces |
-| El QR lleva a una dirección equivocada | No se definió la dirección pública | Define la variable y vuelve a desplegar |
+| El QR lleva a una dirección equivocada | El dominio público cambió | Actualiza la dirección en la pantalla del reproductor y vuelve a desplegar |
 | Dos canciones avanzan de golpe | Dos pantallas pidieron "siguiente" a la vez | Revisa que "avanzar" envíe la canción esperada |
 | Redis se acaba antes de fin de mes | Demasiadas consultas por pantalla abierta | Sube el intervalo de consulta y pausa las pestañas ocultas |
 

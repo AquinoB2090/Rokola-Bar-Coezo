@@ -10,6 +10,7 @@ type Player = {
   destroy: () => void;
 };
 type YouTubeEvent = { data: number };
+const CUSTOMER_URL = "https://rokola-bar-coezo-opgkcnmpz-aquino6.vercel.app/";
 type YTWindow = Window & {
   YT?: { Player: new (id: string, options: object) => Player };
   onYouTubeIframeAPIReady?: () => void;
@@ -21,7 +22,6 @@ export default function PlayerPage() {
   const [started, setStarted] = useState(false);
   const [current, setCurrent] = useState<Song | null>(null);
   const [queue, setQueue] = useState<Song[]>([]);
-  const [origin, setOrigin] = useState("");
   const [playbackError, setPlaybackError] = useState("");
   const player = useRef<Player | null>(null);
   const currentRef = useRef<Song | null>(null);
@@ -29,7 +29,6 @@ export default function PlayerPage() {
   const lastLoadedVideoId = useRef<string | null>(null);
 
   useEffect(() => {
-    requestAnimationFrame(() => setOrigin(process.env.NEXT_PUBLIC_SITE_URL || window.location.origin));
     fetch("/api/auth").then((response) => response.json()).then((data) => setAuth(data.authenticated));
   }, []);
 
@@ -77,11 +76,19 @@ export default function PlayerPage() {
         height: "100%",
         width: "100%",
         videoId: currentRef.current?.videoId,
-        playerVars: { autoplay: 0, controls: 0, disablekb: 1, modestbranding: 1, rel: 0, origin: window.location.origin },
+        playerVars: { autoplay: 1, controls: 0, disablekb: 1, modestbranding: 1, rel: 0, origin: window.location.origin },
         events: {
           onReady: () => setPlayerReady(true),
           onStateChange: (event: YouTubeEvent) => {
+            if (event.data === 1) {
+              setStarted(true);
+              setPlaybackError("");
+            }
             if (event.data === 0) void advanceCurrent();
+          },
+          onAutoplayBlocked: () => {
+            setStarted(false);
+            setPlaybackError("El navegador bloqueó el inicio automático con sonido. Pulsa el botón para iniciar la reproducción.");
           },
           onError: () => {
             setPlaybackError("Este video no se puede reproducir aquí. Saltando a la siguiente canción…");
@@ -115,11 +122,12 @@ export default function PlayerPage() {
 
   const videoId = current?.videoId;
   useEffect(() => {
-    if (!started || !videoId || videoId === lastLoadedVideoId.current || !player.current) return;
+    if (!playerReady || !videoId || videoId === lastLoadedVideoId.current || !player.current) return;
     lastLoadedVideoId.current = videoId;
     setPlaybackError("");
+    setStarted(true);
     player.current.loadVideoById(videoId);
-  }, [started, videoId]);
+  }, [playerReady, videoId]);
 
   function startPlayback() {
     const song = currentRef.current;
@@ -140,17 +148,17 @@ export default function PlayerPage() {
       {!started && <div className="start-overlay">
         <span className="big-note">♫</span>
         <h1>{current ? "La noche suena mejor contigo" : "Esperando la primera canción"}</h1>
-        <p>{current ? "Pulsa para iniciar el video y el sonido" : "Escanea el código QR para pedir una canción"}</p>
+        <p>{current ? playbackError || "Iniciando video y sonido…" : "Escanea el código QR para pedir una canción"}</p>
         <button className="primary-button" disabled={!current || !playerReady} onClick={startPlayback}>
-          {!playerReady ? "Cargando reproductor…" : current ? "Iniciar rokola" : "Esperando canción…"}
+          {!playerReady ? "Cargando reproductor…" : current ? playbackError ? "Iniciar reproducción" : "Iniciar rokola" : "Esperando canción…"}
         </button>
       </div>}
-      {!current && <div className="empty-overlay"><QRCodeSVG value={origin} size={176} bgColor="white" fgColor="#17241f"/><h2>¡Pide tu canción!</h2><p>Escanea y elige la próxima canción</p></div>}
+      {!current && <div className="empty-overlay"><QRCodeSVG value={CUSTOMER_URL} size={176} bgColor="white" fgColor="#17241f"/><h2>¡Pide tu canción!</h2><p>Escanea y elige la próxima canción</p></div>}
       {playbackError && <p className="player-error" role="status">{playbackError}</p>}
     </section>
     <aside className="player-sidebar">
       <div className="brand"><span className="brand-icon">♫</span><h1>ROKOLA</h1></div>
-      <div className="side-qr"><p className="eyebrow">ESCANEA Y PIDE TU CANCIÓN</p><QRCodeSVG value={origin} size={138} bgColor="white" fgColor="#17241f"/></div>
+      <div className="side-qr"><p className="eyebrow">ESCANEA Y PIDE TU CANCIÓN</p><QRCodeSVG value={CUSTOMER_URL} size={138} bgColor="white" fgColor="#17241f"/></div>
       <p className="eyebrow">AHORA SUENA</p><h2 className="side-title">{current?.title ?? "La pista está esperando"}</h2><span className="muted">{current?.channel ?? ""}</span>
       <hr/><p className="eyebrow">A CONTINUACIÓN</p>
       {queue.slice(0, 3).map((song, index) => <div className="side-next" key={song.id}><span>{String(index + 1).padStart(2, "0")}</span><strong>{song.title}</strong></div>)}
