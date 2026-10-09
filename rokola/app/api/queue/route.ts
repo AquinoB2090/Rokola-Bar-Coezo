@@ -2,7 +2,6 @@
 import { NextResponse } from "next/server";
 import { addSong, getState } from "@/lib/queue";
 import { publicSong } from "@/lib/types";
-export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "no-store, no-cache, must-revalidate" };
 export async function GET() {
   const state = await getState();
@@ -25,3 +24,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "No se pudo agregar" }, { status: 400, headers });
   }
 }
+

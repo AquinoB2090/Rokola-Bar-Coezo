@@ -11,5 +11,6 @@
 
 export type QueueState = { current: Song | null; queue: Song[] };
 export type PublicSong = Omit<Song, "clientId">;
-export const publicSong = ({ clientId: _clientId, ...song }: Song): PublicSong => song;
+export const publicSong = (song: Song): PublicSong => { const { clientId, ...publicData } = song; void clientId; return publicData; };
 export const emptyState = (): QueueState => ({ current: null, queue: [] });
+

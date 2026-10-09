@@ -27,7 +27,8 @@ export async function lookupVideo(input: string) {
   const response = await fetch(url, { cache: "no-store" });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error?.errors?.[0]?.reason === "quotaExceeded" ? "Se agotó la cuota de búsqueda; pega el enlace de YouTube" : "No se pudo buscar en YouTube");
-  const songs = (data.items ?? []).map((item: any) => ({ videoId: item.id.videoId, title: decode(item.snippet.title), channel: decode(item.snippet.channelTitle), thumbnail: item.snippet.thumbnails.medium?.url ?? `https://i.ytimg.com/vi/${item.id.videoId}/hqdefault.jpg` }));
+  const songs = (data.items ?? []).map((item: { id: { videoId: string }; snippet: { title: string; channelTitle: string; thumbnails: { medium?: { url: string } } } }) => ({ videoId: item.id.videoId, title: decode(item.snippet.title), channel: decode(item.snippet.channelTitle), thumbnail: item.snippet.thumbnails.medium?.url ?? `https://i.ytimg.com/vi/${item.id.videoId}/hqdefault.jpg` }));
   cache.set(query, { at: Date.now(), songs });
   return songs;
 }
+

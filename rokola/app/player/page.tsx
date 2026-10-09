@@ -1,5 +1,6 @@
 ﻿"use client";
 import { QRCodeSVG } from "qrcode.react";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 type Song = { id: string; videoId: string; title: string; channel: string; requestedBy: string };
 type Player = { loadVideoById: (id: string) => void; destroy: () => void };
@@ -7,13 +8,17 @@ type YTWindow = Window & { YT?: { Player: new (id: string, options: object) => P
 export default function PlayerPage() {
  const [auth,setAuth]=useState<boolean|null>(null),[started,setStarted]=useState(false),[current,setCurrent]=useState<Song|null>(null),[queue,setQueue]=useState<Song[]>([]);
  const [origin,setOrigin]=useState(""); const player=useRef<Player|null>(null), currentRef=useRef<Song|null>(null), startedRef=useRef(false), advancing=useRef(false);
- useEffect(()=>{setOrigin(process.env.NEXT_PUBLIC_SITE_URL||window.location.origin); fetch("/api/auth").then(r=>r.json()).then(d=>setAuth(d.authenticated));},[]);
+ useEffect(()=>{requestAnimationFrame(()=>setOrigin(process.env.NEXT_PUBLIC_SITE_URL||window.location.origin)); fetch("/api/auth").then(r=>r.json()).then(d=>setAuth(d.authenticated));},[]);
  const refresh=useCallback(async()=>{const r=await fetch("/api/queue",{cache:"no-store"});const d=await r.json();setCurrent(d.current);currentRef.current=d.current;setQueue(d.queue);if(!d.current&&d.queue.length&&startedRef.current&&!advancing.current){advancing.current=true;fetch("/api/admin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"advance"})}).finally(()=>{advancing.current=false;});}},[]);
+ // eslint-disable-next-line react-hooks/set-state-in-effect
  useEffect(()=>{if(auth){void refresh();const t=setInterval(refresh,3000);return()=>clearInterval(t);}},[auth,refresh]);
- useEffect(()=>{if(current&&started&&player.current)player.current.loadVideoById(current.videoId);},[current?.id,started]);
- const start=()=>{startedRef.current=true;setStarted(true);const w=window as YTWindow;const create=()=>{if(!w.YT||player.current)return;player.current=new w.YT.Player("rokola-video",{height:"100%",width:"100%",videoId:currentRef.current?.videoId,playerVars:{autoplay:1,controls:0,disablekb:1,modestbranding:1,rel:0},events:{onStateChange:(e:{data:number})=>{if(e.data===0)advanceCurrent();},onError:()=>advanceCurrent()}});};(w as any).__rokolaCreate=create;if(w.YT)create();else{w.onYouTubeIframeAPIReady=create;const s=document.createElement("script");s.src="https://www.youtube.com/iframe_api";document.head.appendChild(s);}};
+ useEffect(()=>{if(current&&started&&player.current)player.current.loadVideoById(current.videoId);},[current?.id,current?.videoId,started]);
+ const start=()=>{startedRef.current=true;setStarted(true);const w=window as YTWindow;const create=()=>{if(!w.YT||player.current)return;player.current=new w.YT.Player("rokola-video",{height:"100%",width:"100%",videoId:currentRef.current?.videoId,playerVars:{autoplay:1,controls:0,disablekb:1,modestbranding:1,rel:0},events:{onStateChange:(e:{data:number})=>{if(e.data===0)advanceCurrent();},onError:()=>advanceCurrent()}});};if(w.YT)create();else{Object.assign(w,{onYouTubeIframeAPIReady:create});const s=document.createElement("script");s.src="https://www.youtube.com/iframe_api";document.head.appendChild(s);}};
  async function advanceCurrent(){const song=currentRef.current;if(!song||advancing.current)return;advancing.current=true;try{await fetch("/api/admin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"advance",id:song.id})});await refresh();}finally{advancing.current=false;}}
  if(auth===null)return <main className="screen-center">Cargando rokola…</main>;
- if(!auth)return <main className="screen-center"><div className="panel"><h1>Acceso del encargado</h1><p>Inicia sesión desde administración para abrir el reproductor.</p><a className="link-button" href="/admin">Ir al panel</a></div></main>;
+ if(!auth)return <main className="screen-center"><div className="panel"><h1>Acceso del encargado</h1><p>Inicia sesión desde administración para abrir el reproductor.</p><Link className="link-button" href="/admin">Ir al panel</Link></div></main>;
  return <main className="player-layout"><section className="video-area">{started?<div id="rokola-video" className="video-frame"/>:<div className="start-overlay"><span className="big-note">♫</span><h1>La noche suena mejor contigo</h1><button className="primary-button" onClick={start}>Iniciar rokola</button></div>}{!current&&<div className="empty-overlay"><QRCodeSVG value={origin} size={176} bgColor="white" fgColor="#17241f"/><h2>¡Pide tu canción!</h2><p>Escanea y elige la próxima canción</p></div>}</section><aside className="player-sidebar"><div className="brand"><span className="brand-icon">♫</span><h1>ROKOLA</h1></div><div className="side-qr"><p className="eyebrow">ESCANEA Y PIDE TU CANCIÓN</p><QRCodeSVG value={origin} size={138} bgColor="white" fgColor="#17241f"/></div><p className="eyebrow">AHORA SUENA</p><h2 className="side-title">{current?.title??"La pista está esperando"}</h2><span className="muted">{current?.channel??""}</span><hr/><p className="eyebrow">A CONTINUACIÓN</p>{queue.slice(0,3).map((song,i)=><div className="side-next" key={song.id}><span>{String(i+1).padStart(2,"0")}</span><strong>{song.title}</strong></div>)}<a className="admin-link" href="/admin">Panel del encargado</a></aside></main>;
 }
+
+
+
