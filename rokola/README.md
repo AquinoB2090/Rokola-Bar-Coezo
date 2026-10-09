@@ -8,7 +8,7 @@ Requiere Node.js 20 o superior.
 
 1. Copia `.env.example` a `.env.local`.
 2. Define `ADMIN_PASSWORD` y `AUTH_SECRET` (usa una cadena aleatoria larga para este último).
-3. Opcionalmente define `YOUTUBE_API_KEY`; sin ella se pueden añadir videos pegando enlaces de YouTube.
+3. Define `NEXT_PUBLIC_YOUTUBE_API_KEY` para buscar por nombre. La clave se usa desde el navegador y debe restringirse a tus dominios web en Google Cloud. Sin ella se pueden añadir videos pegando enlaces de YouTube.
 4. Ejecuta `npm install` y `npm run dev`.
 5. Abre `http://localhost:3000`, administra en `/admin` y reproduce en `/player`.
 
@@ -22,10 +22,10 @@ Conecta este directorio como proyecto Next.js en Vercel, configura las variables
 
 1. Sube el repositorio a GitHub. En Vercel importa el repositorio y establece `rokola` como **Root Directory**.
 2. En Storage conecta una instancia Upstash Redis. Asegúrate de que queden disponibles `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`.
-3. En Settings → Environment Variables define `ADMIN_PASSWORD`, `AUTH_SECRET`, `MAX_PER_CLIENT` y, si quieres búsquedas por texto, `YOUTUBE_API_KEY`.
+3. En Settings → Environment Variables define `ADMIN_PASSWORD`, `AUTH_SECRET`, `MAX_PER_CLIENT` y `NEXT_PUBLIC_YOUTUBE_API_KEY`.
 4. Despliega. Copia el dominio asignado en `NEXT_PUBLIC_SITE_URL` y vuelve a desplegar para que el QR lo use.
 5. Recorre el flujo completo en el sitio publicado. Se requieren las cuentas de GitHub/Vercel, las credenciales de Google y la base Upstash del propietario; no se puede completar ese aprovisionamiento desde el repositorio local.
 
 ### Activar búsqueda por nombre
 
-La búsqueda por canción o artista usa YouTube Data API v3. Crea una API key en Google Cloud Console, habilita YouTube Data API v3 y restríngela a esa API. Luego copia `.env.example` como `.env.local`, pega la clave en `YOUTUBE_API_KEY` y reinicia `npm run dev`. La clave se usa solo en el servidor y no se envía al navegador. En Vercel agrega la misma variable en **Settings → Environment Variables** y vuelve a desplegar. Sin clave, solo funciona la búsqueda pegando un enlace de YouTube.
+La búsqueda por canción o artista usa YouTube Data API v3 directamente desde el navegador. En Google Cloud habilita esa API y configura la clave con **Application restrictions → Websites**. Permite `http://localhost:3000/*` para desarrollo y el dominio de producción, por ejemplo `https://tu-dominio.com/*`. En **API restrictions**, limita la clave a **YouTube Data API v3**. Luego copia `.env.example` como `.env.local`, pega la clave en `NEXT_PUBLIC_YOUTUBE_API_KEY` y reinicia `npm run dev`. En Vercel agrega la misma variable y vuelve a desplegar. Esta clave será visible para los visitantes, por eso debe tener ambas restricciones. Sin clave, todavía se pueden buscar videos pegando enlaces de YouTube.

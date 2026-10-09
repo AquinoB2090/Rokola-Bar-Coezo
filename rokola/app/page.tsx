@@ -1,6 +1,23 @@
 ﻿"use client";
 import { useCallback, useEffect, useState } from "react";
 type Song = { id?: string; videoId: string; title: string; channel: string; thumbnail: string; requestedBy?: string };
+type YouTubeSearchItem = {
+  id: { videoId: string };
+  snippet: { title: string; channelTitle: string; thumbnails: { medium?: { url: string } } };
+};
+
+function isYouTubeLink(value: string) {
+  try {
+    const host = new URL(value).hostname.toLowerCase();
+    return host === "youtu.be" || host.endsWith(".youtu.be") || host === "youtube.com" || host.endsWith(".youtube.com");
+  } catch {
+    return false;
+  }
+}
+
+function decodeYouTubeText(value: string) {
+  return value.replace(/&amp;/g, "&").replace(/&#39;|&#x27;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+}
 export default function Home() {
   const [state, setState] = useState<{ current: Song | null; queue: Song[] }>({ current: null, queue: [] });
   const [query, setQuery] = useState(""); const [results, setResults] = useState<Song[]>([]);
@@ -8,7 +25,49 @@ export default function Home() {
   const refresh = useCallback(async () => { if (document.visibilityState !== "visible") return; const r = await fetch("/api/queue", { cache: "no-store" }); if (r.ok) setState(await r.json()); }, []);
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { const savedName = localStorage.getItem("rokola-name"); if (savedName) queueMicrotask(() => setName(savedName)); if (!localStorage.getItem("rokola-client")) localStorage.setItem("rokola-client", crypto.randomUUID()); void refresh(); const timer = setInterval(refresh, 4000); document.addEventListener("visibilitychange", refresh); return () => { clearInterval(timer); document.removeEventListener("visibilitychange", refresh); }; }, [refresh]);
-  async function search(event: React.FormEvent) { event.preventDefault(); setBusy(true); setMessage(""); try { const r = await fetch(`/api/search?q=${encodeURIComponent(query)}`); const data = await r.json(); if (!r.ok) throw new Error(data.error); setResults(data); if (!data.length) setMessage("No encontramos resultados"); } catch (e) { setMessage(e instanceof Error ? e.message : "No se pudo buscar"); } finally { setBusy(false); } }
+  async function search(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage("");
+    try {
+      let songs: Song[];
+      if (isYouTubeLink(query.trim())) {
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+        songs = data;
+      } else {
+        const key = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
+        if (!key) throw new Error("Falta NEXT_PUBLIC_YOUTUBE_API_KEY. Configúrala para habilitar búsquedas por nombre.");
+        const url = new URL("https://www.googleapis.com/youtube/v3/search");
+        url.search = new URLSearchParams({
+          part: "snippet", type: "video", videoEmbeddable: "true", safeSearch: "moderate",
+          maxResults: "8", q: query.trim(), regionCode: "GT", relevanceLanguage: "es", key,
+        }).toString();
+        const response = await fetch(url);
+        const data = await response.json();
+        if (!response.ok) {
+          const reason = data.error?.errors?.[0]?.reason;
+          if (reason === "quotaExceeded" || reason === "dailyLimitExceeded") throw new Error("Se agotó la cuota de búsqueda de YouTube.");
+          if (reason === "forbidden" || reason === "ipRefererBlocked") throw new Error("Google bloqueó la clave. En Google Cloud configura Application restrictions como Websites y permite el dominio de esta app.");
+          if (reason === "accessNotConfigured") throw new Error("Activa YouTube Data API v3 en el proyecto de Google Cloud de esta clave.");
+          throw new Error("YouTube rechazó la clave. Revisa sus restricciones de sitio web y que tenga habilitada YouTube Data API v3.");
+        }
+        songs = (data.items ?? []).map((item: YouTubeSearchItem) => ({
+          videoId: item.id.videoId,
+          title: decodeYouTubeText(item.snippet.title),
+          channel: decodeYouTubeText(item.snippet.channelTitle),
+          thumbnail: item.snippet.thumbnails.medium?.url ?? `https://i.ytimg.com/vi/${item.id.videoId}/hqdefault.jpg`,
+        }));
+      }
+      setResults(songs);
+      if (!songs.length) setMessage("No encontramos resultados");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo buscar en YouTube");
+    } finally {
+      setBusy(false);
+    }
+  }
   async function add(song: Song) { setMessage(""); const r = await fetch("/api/queue", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...song, requestedBy: name, clientId: localStorage.getItem("rokola-client") }) }); const data = await r.json(); setMessage(r.ok ? "Agregada a la cola" : data.error); if (r.ok) { setResults((items) => items.filter((item) => item.videoId !== song.videoId)); await refresh(); } }
   const queued = new Set([state.current?.videoId, ...state.queue.map((s) => s.videoId)]);
   return <main className="customer-page"><header className="brand"><span className="brand-icon">♫</span><div><p className="eyebrow">LA MÚSICA LA ELIGES TÚ</p><h1>Rokola</h1></div></header>
