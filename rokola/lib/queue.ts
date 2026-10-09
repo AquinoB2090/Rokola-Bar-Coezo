@@ -1,8 +1,10 @@
 import { Redis } from "@upstash/redis";
 import { emptyState, type QueueState, type Song } from "./types";
 
-const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-  ? new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN })
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
+const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
+const redis = redisUrl && redisToken
+  ? new Redis({ url: redisUrl, token: redisToken })
   : null;
 const KEY = "rokola:queue:v1";
 type QueueRuntime = typeof globalThis & {
@@ -16,7 +18,7 @@ export class QueueStorageUnavailableError extends Error {}
 
 function requireProductionRedis() {
   if (!redis && process.env.VERCEL) {
-    throw new QueueStorageUnavailableError("La cola en Vercel necesita Redis compartido. Configura UPSTASH_REDIS_REST_URL y UPSTASH_REDIS_REST_TOKEN.");
+    throw new QueueStorageUnavailableError("La cola en Vercel necesita Redis compartido. Conecta Upstash o configura UPSTASH_REDIS_REST_URL y UPSTASH_REDIS_REST_TOKEN (también se aceptan KV_REST_API_URL y KV_REST_API_TOKEN).");
   }
 }
 
