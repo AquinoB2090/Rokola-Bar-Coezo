@@ -10,7 +10,7 @@ type Player = {
   destroy: () => void;
 };
 type YouTubeEvent = { data: number };
-const CUSTOMER_URL = "https://rokola-bar-coezo-opgkcnmpz-aquino6.vercel.app/";
+const CUSTOMER_URL = "https://rokola-bar-coezo.vercel.app/";
 type YTWindow = Window & {
   YT?: { Player: new (id: string, options: object) => Player };
   onYouTubeIframeAPIReady?: () => void;

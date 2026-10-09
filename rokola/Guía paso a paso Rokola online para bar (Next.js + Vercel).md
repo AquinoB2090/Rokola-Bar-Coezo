@@ -175,7 +175,7 @@ Lo que se ve en pantalla:
 - **Una barra lateral** con el código QR, el título de lo que suena y las próximas tres canciones.
 - **Una pantalla de espera** con el QR muy grande y el texto "¡Pide tu canción!" cuando no hay nada en cola.
 
-El QR apunta a `https://rokola-bar-coezo-opgkcnmpz-aquino6.vercel.app/`, aunque abras el reproductor desde otra dirección.
+El QR apunta al dominio público `https://rokola-bar-coezo.vercel.app/`, aunque abras el reproductor desde otra dirección. Usa el dominio de producción, no una URL individual de despliegue protegida por Vercel.
 
 Consejos de instalación en el bar: usa un navegador dedicado en pantalla completa (tecla F11), desactiva la suspensión de la pantalla del equipo y abre el reproductor desde una cuenta de navegador que no uses para otra cosa. Si decides usar YouTube Premium (ver la sección de anuncios), este es el navegador donde debe estar iniciada esa sesión.
 

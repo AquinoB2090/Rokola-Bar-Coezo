@@ -16,7 +16,7 @@ En desarrollo local, sin Redis, la cola se comparte en memoria entre rutas y se 
 
 ## Despliegue
 
-Conecta este directorio como proyecto Next.js en Vercel, configura las variables de entorno y conecta una base Upstash Redis. El QR del reproductor apunta a `https://rokola-bar-coezo-opgkcnmpz-aquino6.vercel.app/`. GitHub/Vercel, las credenciales de Upstash y la clave de Google deben configurarse en las cuentas correspondientes; no se incluyen secretos en el repositorio.
+Conecta este directorio como proyecto Next.js en Vercel, configura las variables de entorno y conecta una base Upstash Redis. El QR del reproductor apunta al dominio público de producción `https://rokola-bar-coezo.vercel.app/`. GitHub/Vercel, las credenciales de Upstash y la clave de Google deben configurarse en las cuentas correspondientes; no se incluyen secretos en el repositorio.
 
 ### Publicación en Vercel (paso 10)
 
@@ -28,4 +28,4 @@ Conecta este directorio como proyecto Next.js en Vercel, configura las variables
 
 ### Activar búsqueda por nombre
 
-La búsqueda por canción o artista usa YouTube Data API v3 directamente desde el navegador. En Google Cloud habilita esa API y configura la clave con **Application restrictions → Websites**. Permite `http://localhost:3000/*` para desarrollo y el dominio de producción, por ejemplo `https://tu-dominio.com/*`. En **API restrictions**, limita la clave a **YouTube Data API v3**. Luego copia `.env.example` como `.env.local`, pega la clave en `NEXT_PUBLIC_YOUTUBE_API_KEY` y reinicia `npm run dev`. En Vercel agrega la misma variable y vuelve a desplegar. Esta clave será visible para los visitantes, por eso debe tener ambas restricciones. Sin clave, todavía se pueden buscar videos pegando enlaces de YouTube.
+La búsqueda por canción o artista usa YouTube Data API v3 directamente desde el navegador. En Google Cloud habilita esa API y configura la clave con **Application restrictions → Websites**. Permite `http://localhost:3000/*` para desarrollo y `https://rokola-bar-coezo.vercel.app/*` para producción. En **API restrictions**, limita la clave a **YouTube Data API v3**. Luego copia `.env.example` como `.env.local`, pega la clave en `NEXT_PUBLIC_YOUTUBE_API_KEY` y reinicia `npm run dev`. En Vercel agrega la misma variable y vuelve a desplegar. Esta clave será visible para los visitantes, por eso debe tener ambas restricciones. Sin clave, todavía se pueden buscar videos pegando enlaces de YouTube.
