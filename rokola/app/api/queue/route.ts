@@ -1,11 +1,16 @@
 ﻿import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { addSong, getState } from "@/lib/queue";
+import { addSong, getState, QueueStorageUnavailableError } from "@/lib/queue";
 import { publicSong } from "@/lib/types";
 const headers = { "Cache-Control": "no-store, no-cache, must-revalidate" };
 export async function GET() {
-  const state = await getState();
-  return NextResponse.json({ current: state.current ? publicSong(state.current) : null, queue: state.queue.map(publicSong) }, { headers });
+  try {
+    const state = await getState();
+    return NextResponse.json({ current: state.current ? publicSong(state.current) : null, queue: state.queue.map(publicSong) }, { headers });
+  } catch (error) {
+    const status = error instanceof QueueStorageUnavailableError ? 503 : 500;
+    return NextResponse.json({ error: error instanceof Error ? error.message : "No se pudo leer la cola" }, { status, headers });
+  }
 }
 export async function POST(request: Request) {
   try {
@@ -21,7 +26,8 @@ export async function POST(request: Request) {
     await addSong({ id: randomUUID(), videoId, title, channel, thumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`, requestedBy, clientId, addedAt: Date.now() });
     return NextResponse.json({ ok: true }, { headers });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "No se pudo agregar" }, { status: 400, headers });
+    const status = error instanceof QueueStorageUnavailableError ? 503 : 400;
+    return NextResponse.json({ error: error instanceof Error ? error.message : "No se pudo agregar" }, { status, headers });
   }
 }
 

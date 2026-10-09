@@ -22,7 +22,13 @@ export default function Home() {
   const [state, setState] = useState<{ current: Song | null; queue: Song[] }>({ current: null, queue: [] });
   const [query, setQuery] = useState(""); const [results, setResults] = useState<Song[]>([]);
   const [name, setName] = useState(""); const [message, setMessage] = useState(""); const [busy, setBusy] = useState(false);
-  const refresh = useCallback(async () => { if (document.visibilityState !== "visible") return; const r = await fetch("/api/queue", { cache: "no-store" }); if (r.ok) setState(await r.json()); }, []);
+  const refresh = useCallback(async () => {
+    if (document.visibilityState !== "visible") return;
+    const response = await fetch("/api/queue", { cache: "no-store" });
+    const data = await response.json();
+    if (!response.ok) { setMessage(data.error ?? "No se pudo cargar la cola"); return; }
+    setState(data);
+  }, []);
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { const savedName = localStorage.getItem("rokola-name"); if (savedName) queueMicrotask(() => setName(savedName)); if (!localStorage.getItem("rokola-client")) localStorage.setItem("rokola-client", crypto.randomUUID()); void refresh(); const timer = setInterval(refresh, 4000); document.addEventListener("visibilitychange", refresh); return () => { clearInterval(timer); document.removeEventListener("visibilitychange", refresh); }; }, [refresh]);
   async function search(event: React.FormEvent) {

@@ -35,8 +35,8 @@ export default function PlayerPage() {
 
   const refresh = useCallback(async () => {
     const response = await fetch("/api/queue", { cache: "no-store" });
-    if (!response.ok) return;
     const data = await response.json();
+    if (!response.ok) { setPlaybackError(data.error ?? "No se pudo cargar la cola"); return; }
     setCurrent(data.current);
     currentRef.current = data.current;
     setQueue(data.queue);

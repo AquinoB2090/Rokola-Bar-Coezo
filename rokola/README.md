@@ -1,4 +1,4 @@
-﻿# Rokola
+# Rokola
 
 Rokola para bar construida con Next.js. Incluye una vista pública para pedir canciones, el reproductor de sala y el panel privado.
 
@@ -12,7 +12,7 @@ Requiere Node.js 20 o superior.
 4. Ejecuta `npm install` y `npm run dev`.
 5. Abre `http://localhost:3000`, administra en `/admin` y reproduce en `/player`.
 
-Sin credenciales de Redis, la cola se guarda en memoria y se vacía al reiniciar el servidor. Para despliegue configura `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`, además de las variables de entorno descritas en `.env.example`.
+En desarrollo local, sin Redis, la cola se comparte en memoria entre rutas y se vacía al reiniciar el servidor. En Vercel Redis es obligatorio porque sus funciones no comparten memoria; configura `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`, además de las variables de entorno descritas en `.env.example`.
 
 ## Despliegue
 

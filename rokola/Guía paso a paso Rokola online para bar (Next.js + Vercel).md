@@ -83,7 +83,7 @@ La cola es el corazón de la rokola, y todo lo demás solo la muestra o la modif
 **Reglas que evitan problemas en el bar:**
 
 1. No se acepta una canción que ya suena o ya está en la cola.
-2. Cada celular puede tener como máximo 3 canciones esperando.
+2. Cada celular puede tener como máximo 10 canciones esperando (ajustable con `MAX_PER_CLIENT`).
 3. El identificador del celular nunca se envía de vuelta a los navegadores; solo lo usa el servidor para contar.
 4. "Avanzar" indica qué canción cree quien lo pide que está sonando, y solo se ejecuta si coincide. Así, si el reproductor y el administrador piden la siguiente al mismo tiempo, la cola avanza una sola vez.
 
@@ -153,7 +153,7 @@ Comportamiento que marca la diferencia:
 - Generar el identificador del celular la primera vez y guardarlo en el almacenamiento local del navegador.
 - Tratar el acceso por QR como público: esta pantalla nunca muestra botones de administrador.
 
-Para probarla, abre la dirección desde tu celular en la misma red Wi-Fi que tu computadora y comprueba tres casos: una búsqueda por nombre, un enlace pegado y el rechazo del cuarto pedido seguido.
+Para probarla, abre la dirección desde tu celular en la misma red Wi-Fi que tu computadora y comprueba tres casos: una búsqueda por nombre, un enlace pegado y el rechazo del undécimo pedido seguido desde el mismo celular.
 
 ## Paso 7: la pantalla del reproductor
 
@@ -210,7 +210,7 @@ Con solo dos variables obligatorias ya puedes probar todo en tu computadora; las
 | AUTH\_SECRET | Cadena larga aleatoria que firma la sesión | Sí |
 | YOUTUBE\_API\_KEY | Búsqueda por nombre; sin ella solo funcionan los enlaces | No, pero recomendada |
 | UPSTASH\_REDIS\_REST\_URL y UPSTASH\_REDIS\_REST\_TOKEN | Conexión a Redis; sin ellas la cola vive en memoria | Solo en producción |
-| MAX\_PER\_CLIENT | Máximo de canciones en espera por celular (por defecto 3) | No |
+| MAX\_PER\_CLIENT | Máximo de canciones en espera por celular (por defecto 10) | No |
 | NEXT\_PUBLIC\_SITE\_URL | Dirección pública que lleva el QR | Recomendada en producción |
 
 Para probar, arranca el servidor de desarrollo (npm run dev) y recorre este circuito completo:
@@ -219,7 +219,7 @@ Para probar, arranca el servidor de desarrollo (npm run dev) y recorre este circ
 2. Abre el reproductor en otra pestaña y pulsa "Iniciar rokola".
 3. Abre la página de clientes desde tu celular, en la misma red Wi-Fi, usando la dirección IP de tu computadora.
 4. Agrega una canción por enlace y otra por nombre; la primera debe empezar a sonar sola.
-5. Agrega cuatro canciones seguidas desde el mismo celular; la cuarta debe rechazarse.
+5. Agrega once canciones seguidas desde el mismo celular; la undécima debe rechazarse.
 6. En el panel, da prioridad a una canción del final y comprueba que suena la siguiente.
 7. Salta la canción actual y elimina otra desde el panel.
 8. Deja que un video termine solo y confirma que pasa a la siguiente sin tocar nada.

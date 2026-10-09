@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useCallback,useEffect,useState } from "react";
 type Song={id:string;title:string;channel:string;requestedBy:string};type State={current:Song|null;queue:Song[]};
 export default function AdminPage(){const [auth,setAuth]=useState<boolean|null>(null),[password,setPassword]=useState(""),[error,setError]=useState(""),[state,setState]=useState<State>({current:null,queue:[]}),[busy,setBusy]=useState(false);
- const refresh=useCallback(async()=>{const r=await fetch("/api/queue",{cache:"no-store"});if(r.ok)setState(await r.json());},[]);
+ const refresh=useCallback(async()=>{const r=await fetch("/api/queue",{cache:"no-store"});const d=await r.json();if(r.ok)setState(d);else setError(d.error??"No se pudo cargar la cola");},[]);
  useEffect(()=>{fetch("/api/auth").then(r=>r.json()).then(d=>{setAuth(d.authenticated);if(d.authenticated)void refresh();});},[refresh]);
  useEffect(()=>{if(!auth)return;const t=setInterval(refresh,3000);return()=>clearInterval(t);},[auth,refresh]);
  async function login(e:React.FormEvent){e.preventDefault();setError("");const r=await fetch("/api/auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password})});const d=await r.json();if(!r.ok){setError(d.error);return;}setAuth(true);setPassword("");}
