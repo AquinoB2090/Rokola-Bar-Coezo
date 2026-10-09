@@ -25,3 +25,7 @@ Conecta este directorio como proyecto Next.js en Vercel, configura las variables
 3. En Settings → Environment Variables define `ADMIN_PASSWORD`, `AUTH_SECRET`, `MAX_PER_CLIENT` y, si quieres búsquedas por texto, `YOUTUBE_API_KEY`.
 4. Despliega. Copia el dominio asignado en `NEXT_PUBLIC_SITE_URL` y vuelve a desplegar para que el QR lo use.
 5. Recorre el flujo completo en el sitio publicado. Se requieren las cuentas de GitHub/Vercel, las credenciales de Google y la base Upstash del propietario; no se puede completar ese aprovisionamiento desde el repositorio local.
+
+### Activar búsqueda por nombre
+
+La búsqueda por canción o artista usa YouTube Data API v3. Crea una API key en Google Cloud Console, habilita YouTube Data API v3 y restríngela a esa API. Luego copia `.env.example` como `.env.local`, pega la clave en `YOUTUBE_API_KEY` y reinicia `npm run dev`. La clave se usa solo en el servidor y no se envía al navegador. En Vercel agrega la misma variable en **Settings → Environment Variables** y vuelve a desplegar. Sin clave, solo funciona la búsqueda pegando un enlace de YouTube.

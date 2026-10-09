@@ -21,7 +21,7 @@ export async function lookupVideo(input: string) {
   if (query.length < 2 || query.length > 100) throw new Error("Escribe una canción o pega un enlace de YouTube");
   const hit = cache.get(query);
   if (hit && Date.now() - hit.at < 3_600_000) return hit.songs;
-  if (!process.env.YOUTUBE_API_KEY) throw new Error("La búsqueda necesita una clave de YouTube; pega el enlace del video");
+  if (!process.env.YOUTUBE_API_KEY) throw new Error("La búsqueda por nombre necesita YOUTUBE_API_KEY. Configúrala en .env.local; mientras tanto puedes pegar un enlace de YouTube.");
   const url = new URL("https://www.googleapis.com/youtube/v3/search");
   url.search = new URLSearchParams({ part: "snippet", type: "video", videoEmbeddable: "true", safeSearch: "moderate", maxResults: "8", q: input.trim(), key: process.env.YOUTUBE_API_KEY }).toString();
   const response = await fetch(url, { cache: "no-store" });
@@ -31,4 +31,5 @@ export async function lookupVideo(input: string) {
   cache.set(query, { at: Date.now(), songs });
   return songs;
 }
+
 
