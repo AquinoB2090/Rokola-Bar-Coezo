@@ -26,10 +26,20 @@ export async function lookupVideo(input: string) {
   url.search = new URLSearchParams({ part: "snippet", type: "video", videoEmbeddable: "true", safeSearch: "moderate", maxResults: "8", q: input.trim(), key: process.env.YOUTUBE_API_KEY }).toString();
   const response = await fetch(url, { cache: "no-store" });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error?.errors?.[0]?.reason === "quotaExceeded" ? "Se agotó la cuota de búsqueda; pega el enlace de YouTube" : "No se pudo buscar en YouTube");
+  if (!response.ok) {
+    const reason = data.error?.errors?.[0]?.reason;
+    const apiMessage = String(data.error?.message ?? "");
+    if (reason === "quotaExceeded" || reason === "dailyLimitExceeded") throw new Error("Se agotó la cuota de búsqueda; pega el enlace de YouTube");
+    if (apiMessage.includes("Android client application")) throw new Error("La clave está restringida a Android, pero Rokola busca desde el servidor. En Google Cloud cambia Application restrictions a None y limita la clave a YouTube Data API v3.");
+    if (reason === "accessNotConfigured") throw new Error("Activa YouTube Data API v3 en el proyecto de Google Cloud de esta clave.");
+    if (reason === "forbidden" || reason === "ipRefererBlocked") throw new Error("Google bloqueó la clave por sus restricciones. Revisa las restricciones de aplicación y permite YouTube Data API v3.");
+    if (reason === "keyInvalid") throw new Error("Google no reconoce esta clave. Revisa YOUTUBE_API_KEY en .env.local.");
+    throw new Error("No se pudo buscar en YouTube. Revisa la clave y la configuración de YouTube Data API v3 en Google Cloud.");
+  }
   const songs = (data.items ?? []).map((item: { id: { videoId: string }; snippet: { title: string; channelTitle: string; thumbnails: { medium?: { url: string } } } }) => ({ videoId: item.id.videoId, title: decode(item.snippet.title), channel: decode(item.snippet.channelTitle), thumbnail: item.snippet.thumbnails.medium?.url ?? `https://i.ytimg.com/vi/${item.id.videoId}/hqdefault.jpg` }));
   cache.set(query, { at: Date.now(), songs });
   return songs;
 }
+
 
 
