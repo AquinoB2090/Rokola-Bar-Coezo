@@ -24,7 +24,8 @@ export async function addSong(song: Song) {
   if (state.queue.filter((item) => item.clientId === song.clientId).length >= limit) {
     throw new Error(`Puedes tener hasta ${limit} canciones en espera`);
   }
-  state.queue.push(song);
+  if (!state.current) state.current = song;
+  else state.queue.push(song);
   await save(state);
 }
 export async function advance(expectedId?: string) {
