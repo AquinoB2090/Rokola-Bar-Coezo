@@ -1,69 +1,19 @@
-import Image from "next/image";
-
+﻿"use client";
+import { useCallback, useEffect, useState } from "react";
+type Song = { id?: string; videoId: string; title: string; channel: string; thumbnail: string; requestedBy?: string };
 export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+  const [state, setState] = useState<{ current: Song | null; queue: Song[] }>({ current: null, queue: [] });
+  const [query, setQuery] = useState(""); const [results, setResults] = useState<Song[]>([]);
+  const [name, setName] = useState(""); const [message, setMessage] = useState(""); const [busy, setBusy] = useState(false);
+  const refresh = useCallback(async () => { if (document.visibilityState !== "visible") return; const r = await fetch("/api/queue", { cache: "no-store" }); if (r.ok) setState(await r.json()); }, []);
+  useEffect(() => { const savedName = localStorage.getItem("rokola-name"); if (savedName) setName(savedName); if (!localStorage.getItem("rokola-client")) localStorage.setItem("rokola-client", crypto.randomUUID()); void refresh(); const timer = setInterval(refresh, 4000); document.addEventListener("visibilitychange", refresh); return () => { clearInterval(timer); document.removeEventListener("visibilitychange", refresh); }; }, [refresh]);
+  async function search(event: React.FormEvent) { event.preventDefault(); setBusy(true); setMessage(""); try { const r = await fetch(`/api/search?q=${encodeURIComponent(query)}`); const data = await r.json(); if (!r.ok) throw new Error(data.error); setResults(data); if (!data.length) setMessage("No encontramos resultados"); } catch (e) { setMessage(e instanceof Error ? e.message : "No se pudo buscar"); } finally { setBusy(false); } }
+  async function add(song: Song) { setMessage(""); const r = await fetch("/api/queue", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...song, requestedBy: name, clientId: localStorage.getItem("rokola-client") }) }); const data = await r.json(); setMessage(r.ok ? "Agregada a la cola" : data.error); if (r.ok) { setResults((items) => items.filter((item) => item.videoId !== song.videoId)); await refresh(); } }
+  const queued = new Set([state.current?.videoId, ...state.queue.map((s) => s.videoId)]);
+  return <main className="customer-page"><header className="brand"><span className="brand-icon">♫</span><div><p className="eyebrow">LA MÚSICA LA ELIGES TÚ</p><h1>Rokola</h1></div></header>
+    <section className="now-card"><p className="eyebrow">AHORA SUENA</p><strong>{state.current?.title ?? "Aún no hay canciones"}</strong><span>{state.current?.channel ?? "Sé quien inaugure la pista"} · {state.queue.length} en espera</span></section>
+    <section className="panel"><h2>Pide tu canción</h2><label className="field-label" htmlFor="requester">¿Quién la pide? <span>opcional</span></label><input id="requester" value={name} maxLength={30} placeholder="Tu nombre" onChange={(e) => { setName(e.target.value); localStorage.setItem("rokola-name", e.target.value); }} />
+    <form className="search-form" onSubmit={search}><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Canción o enlace de YouTube" required/><button disabled={busy}>{busy ? "Buscando…" : "Buscar"}</button></form>{message && <p className="notice" role="status">{message}</p>}
+    <div className="results">{results.map((song) => <article className="song-row" key={song.videoId}><img src={song.thumbnail} alt=""/><div className="song-info"><strong>{song.title}</strong><span>{song.channel}</span></div><button className="add-button" disabled={queued.has(song.videoId)} onClick={() => add(song)}>{queued.has(song.videoId) ? "En cola" : "＋"}</button></article>)}</div></section>
+    <section className="panel queue-panel"><div className="section-heading"><h2>Próximas canciones</h2><span className="count-pill">{state.queue.length}</span></div>{state.queue.length ? state.queue.map((song, i) => <div className="queue-row" key={song.id}><span className="queue-number">{i + 1}</span><div className="song-info"><strong>{song.title}</strong><span>{song.requestedBy || "Pedido anónimo"}</span></div></div>) : <p className="muted">La pista está esperando la primera canción.</p>}</section><footer>Hecho para cantar en compañía</footer></main>;
 }
