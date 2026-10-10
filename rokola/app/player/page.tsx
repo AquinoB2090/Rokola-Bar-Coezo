@@ -157,7 +157,7 @@ export default function PlayerPage() {
       {playbackError && <p className="player-error" role="status">{playbackError}</p>}
     </section>
     <aside className="player-sidebar">
-      <div className="brand"><span className="brand-icon">♫</span><h1>ROKOLA</h1></div>
+      <div className="brand"><span className="brand-icon">♫</span><h1>BAR Y RESTAURANTE  COEZOS</h1></div>
       <div className="side-qr"><p className="eyebrow">ESCANEA Y PIDE TU CANCIÓN</p><QRCodeSVG value={CUSTOMER_URL} size={138} bgColor="white" fgColor="#17241f"/></div>
       <p className="eyebrow">AHORA SUENA</p><h2 className="side-title">{current?.title ?? "La pista está esperando"}</h2><span className="muted">{current?.channel ?? ""}</span>
       <hr/><p className="eyebrow">A CONTINUACIÓN</p>
