@@ -1,6 +1,5 @@
 "use client";
 
-import { QRCodeSVG } from "qrcode.react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -10,7 +9,6 @@ type Player = {
   destroy: () => void;
 };
 type YouTubeEvent = { data: number };
-const CUSTOMER_URL = "https://rokola-bar-coezo.vercel.app/";
 type YTWindow = Window & {
   YT?: { Player: new (id: string, options: object) => Player };
   onYouTubeIframeAPIReady?: () => void;
@@ -21,9 +19,9 @@ export default function PlayerPage() {
   const [playerReady, setPlayerReady] = useState(false);
   const [started, setStarted] = useState(false);
   const [current, setCurrent] = useState<Song | null>(null);
-  const [queue, setQueue] = useState<Song[]>([]);
   const [playbackError, setPlaybackError] = useState("");
   const player = useRef<Player | null>(null);
+  const videoArea = useRef<HTMLElement | null>(null);
   const currentRef = useRef<Song | null>(null);
   const advancing = useRef(false);
   const lastLoadedVideoId = useRef<string | null>(null);
@@ -38,8 +36,14 @@ export default function PlayerPage() {
     if (!response.ok) { setPlaybackError(data.error ?? "No se pudo cargar la cola"); return; }
     setCurrent(data.current);
     currentRef.current = data.current;
-    setQueue(data.queue);
   }, []);
+
+  function enterFullscreen() {
+    const area = videoArea.current;
+    if (area && !document.fullscreenElement) {
+      void area.requestFullscreen?.().catch(() => {});
+    }
+  }
 
   const advanceCurrent = useCallback(async () => {
     const song = currentRef.current;
@@ -76,7 +80,7 @@ export default function PlayerPage() {
         height: "100%",
         width: "100%",
         videoId: currentRef.current?.videoId,
-        playerVars: { autoplay: 1, controls: 0, disablekb: 1, modestbranding: 1, rel: 0, origin: window.location.origin },
+        playerVars: { autoplay: 1, controls: 0, disablekb: 1, modestbranding: 1, rel: 0, fs: 1, origin: window.location.origin },
         events: {
           onReady: () => setPlayerReady(true),
           onStateChange: (event: YouTubeEvent) => {
@@ -133,6 +137,7 @@ export default function PlayerPage() {
     const song = currentRef.current;
     if (!song || !player.current || !playerReady) return;
     setPlaybackError("");
+    enterFullscreen();
     lastLoadedVideoId.current = song.videoId;
     setStarted(true);
     // Start from the click itself so the browser allows audio playback.
@@ -143,26 +148,17 @@ export default function PlayerPage() {
   if (!auth) return <main className="screen-center"><div className="panel"><h1>Acceso del encargado</h1><p>Inicia sesión desde administración para abrir el reproductor.</p><Link className="link-button" href="/admin">Ir al panel</Link></div></main>;
 
   return <main className="player-layout">
-    <section className="video-area">
+    <section className="video-area" ref={videoArea}>
       <div id="rokola-video" className="video-frame" />
       {!started && <div className="start-overlay">
-        <span className="big-note">♫</span>
         <h1>{current ? "La noche suena mejor contigo" : "Esperando la primera canción"}</h1>
-        <p>{current ? playbackError || "Iniciando video y sonido…" : "Escanea el código QR para pedir una canción"}</p>
+        {current && <p>{playbackError || "Iniciando video y sonido…"}</p>}
         <button className="primary-button" disabled={!current || !playerReady} onClick={startPlayback}>
           {!playerReady ? "Cargando reproductor…" : current ? playbackError ? "Iniciar reproducción" : "Iniciar rokola" : "Esperando canción…"}
         </button>
       </div>}
-      {!current && <div className="empty-overlay"><QRCodeSVG value={CUSTOMER_URL} size={176} bgColor="white" fgColor="#17241f"/><h2>¡Pide tu canción!</h2><p>Escanea y elige la próxima canción</p></div>}
+      <button className="fullscreen-button" type="button" aria-label="Poner video en pantalla completa" onClick={enterFullscreen}>⛶</button>
       {playbackError && <p className="player-error" role="status">{playbackError}</p>}
     </section>
-    <aside className="player-sidebar">
-      <div className="brand"><span className="brand-icon">♫</span><h1>BAR Y RESTAURANTE  COEZOS</h1></div>
-      <div className="side-qr"><p className="eyebrow">ESCANEA Y PIDE TU CANCIÓN</p><QRCodeSVG value={CUSTOMER_URL} size={138} bgColor="white" fgColor="#17241f"/></div>
-      <p className="eyebrow">AHORA SUENA</p><h2 className="side-title">{current?.title ?? "La pista está esperando"}</h2><span className="muted">{current?.channel ?? ""}</span>
-      <hr/><p className="eyebrow">A CONTINUACIÓN</p>
-      {queue.slice(0, 3).map((song, index) => <div className="side-next" key={song.id}><span>{String(index + 1).padStart(2, "0")}</span><strong>{song.title}</strong></div>)}
-      <Link className="admin-link" href="/admin">Panel del encargado</Link>
-    </aside>
   </main>;
 }
